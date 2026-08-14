@@ -11,6 +11,7 @@ import MyReservationsScreen from './src/screens/customer/MyReservationsScreen';
 import MyParkingScreen from './src/screens/customer/MyParkingScreen';
 import BuyPassScreen from './src/screens/customer/BuyPassScreen';
 import MyPassesScreen from './src/screens/customer/MyPassesScreen';
+import ReportIncidentScreen from './src/screens/customer/ReportIncidentScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -33,6 +34,7 @@ export default function App() {
           <Stack.Screen name="MyParking" component={MyParkingScreen} />
           <Stack.Screen name="BuyPass" component={BuyPassScreen} />
           <Stack.Screen name="MyPasses" component={MyPassesScreen} />
+          <Stack.Screen name="ReportIncident" component={ReportIncidentScreen} />
         </Stack.Navigator>
         <StatusBar style="dark" />
       </NavigationContainer>

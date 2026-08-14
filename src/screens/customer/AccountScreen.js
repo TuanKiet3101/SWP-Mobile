@@ -92,6 +92,19 @@ export default function AccountScreen({ navigation }) {
                 </View>
                 <Feather name="chevron-right" size={16} color="#94a3b8" />
               </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.menuItem} 
+                onPress={() => navigation.navigate('ReportIncident')}
+              >
+                <View style={styles.menuIconText}>
+                  <View style={[styles.menuIconWrapper, { backgroundColor: '#fff7ed' }]}>
+                    <Feather name="alert-triangle" size={16} color="#ea580c" />
+                  </View>
+                  <Text style={styles.menuItemText}>Báo cáo sự cố</Text>
+                </View>
+                <Feather name="chevron-right" size={16} color="#94a3b8" />
+              </TouchableOpacity>
             </View>
 
             {/* Logout card */}

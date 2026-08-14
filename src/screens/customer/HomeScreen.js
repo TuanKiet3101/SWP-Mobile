@@ -4,7 +4,8 @@ import {
   Text, 
   View, 
   ScrollView, 
-  TouchableOpacity 
+  TouchableOpacity,
+  Alert
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -47,6 +48,12 @@ export default function HomeScreen({ navigation }) {
       title: 'Quy định',
       desc: 'Giờ mở cửa, nội quy bãi đỗ xe.',
       icon: 'info',
+    },
+    {
+      to: 'ReportIncident',
+      title: 'Báo cáo sự cố',
+      desc: 'Gửi khiếu nại về hư hại xe hoặc phản hồi sự cố bãi đỗ.',
+      icon: 'alert-triangle',
     },
   ];
 
@@ -180,6 +187,16 @@ export default function HomeScreen({ navigation }) {
                   </View>
                   <Text style={styles.quickActionText}>Vé tháng</Text>
                 </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={[styles.quickActionCard, { backgroundColor: '#fff7ed', width: '100%', flexDirection: 'row', justifyContent: 'center', gap: 12 }]} 
+                  onPress={() => navigation.navigate('ReportIncident')}
+                >
+                  <View style={[styles.quickActionIconBg, { backgroundColor: '#ea580c' }]}>
+                    <Feather name="alert-triangle" size={20} color="#ffffff" />
+                  </View>
+                  <Text style={styles.quickActionText}>Báo cáo sự cố khẩn cấp</Text>
+                </TouchableOpacity>
               </View>
             </View>
           ) : (
@@ -223,9 +240,26 @@ export default function HomeScreen({ navigation }) {
               <TouchableOpacity 
                 key={idx} 
                 style={styles.guestLinkCard}
-                onPress={() => navigation.navigate(g.to)}
+                onPress={() => {
+                  if (g.to === 'ReportIncident') {
+                    if (isAuthenticated) {
+                      navigation.navigate('ReportIncident');
+                    } else {
+                      Alert.alert(
+                        'Yêu cầu đăng nhập',
+                        'Vui lòng đăng nhập để sử dụng tính năng gửi báo cáo sự cố.',
+                        [
+                          { text: 'Hủy bỏ', style: 'cancel' },
+                          { text: 'Đăng nhập', onPress: () => navigation.navigate('Login') }
+                        ]
+                      );
+                    }
+                  } else {
+                    navigation.navigate(g.to);
+                  }
+                }}
               >
-                <View style={styles.iconContainerBlue}>
+                <View style={[styles.iconContainerBlue, g.to === 'ReportIncident' && { backgroundColor: '#ea580c' }]}>
                   <Feather name={g.icon} size={22} color="#ffffff" />
                 </View>
                 <Text style={styles.guestLinkTitle}>{g.title}</Text>
