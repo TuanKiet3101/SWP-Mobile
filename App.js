@@ -1,5 +1,8 @@
 import React from 'react';
+import { LogBox } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+
+LogBox.ignoreAllLogs();
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AuthProvider } from './src/context/AuthContext';
@@ -12,6 +15,7 @@ import MyParkingScreen from './src/screens/customer/MyParkingScreen';
 import BuyPassScreen from './src/screens/customer/BuyPassScreen';
 import MyPassesScreen from './src/screens/customer/MyPassesScreen';
 import ReportIncidentScreen from './src/screens/customer/ReportIncidentScreen';
+import PaymentWebViewScreen from './src/screens/customer/PaymentWebViewScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -19,9 +23,9 @@ export default function App() {
   return (
     <AuthProvider>
       <NavigationContainer>
-        <Stack.Navigator 
-          initialRouteName="Main" 
-          screenOptions={{ 
+        <Stack.Navigator
+          initialRouteName="Main"
+          screenOptions={{
             headerShown: false,
             animation: 'slide_from_right'
           }}
@@ -35,6 +39,7 @@ export default function App() {
           <Stack.Screen name="BuyPass" component={BuyPassScreen} />
           <Stack.Screen name="MyPasses" component={MyPassesScreen} />
           <Stack.Screen name="ReportIncident" component={ReportIncidentScreen} />
+          <Stack.Screen name="PaymentWebView" component={PaymentWebViewScreen} />
         </Stack.Navigator>
         <StatusBar style="dark" />
       </NavigationContainer>

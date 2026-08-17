@@ -12,7 +12,7 @@ import {
   ScrollView 
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
-import { Feather } from '@expo/vector-icons';
+import { Feather, FontAwesome } from '@expo/vector-icons';
 
 export default function RegisterScreen({ navigation }) {
   const [username, setUsername] = useState('');
@@ -22,7 +22,8 @@ export default function RegisterScreen({ navigation }) {
   const [phone, setPhone] = useState('');
   const [secureText, setSecureText] = useState(true);
   const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const { register, loginWithGoogle } = useAuth();
 
   const handleRegister = async () => {
     if (!username.trim() || !password.trim() || !fullname.trim() || !email.trim()) {
@@ -58,6 +59,29 @@ export default function RegisterScreen({ navigation }) {
       Alert.alert('Đăng ký thất bại', errorMsg);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    try {
+      await loginWithGoogle();
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Main' }],
+      });
+    } catch (error) {
+      console.error('Google login error during register:', error);
+      const errorStr = String(error);
+      if (!errorStr.includes('cancel') && !errorStr.includes('SIGN_IN_CANCELLED')) {
+        let errorMsg = 'Đăng ký/Đăng nhập bằng Google thất bại. Vui lòng thử lại.';
+        if (error.response) {
+          errorMsg = error.response.data?.error?.message || errorMsg;
+        }
+        Alert.alert('Thất bại', errorMsg);
+      }
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -158,12 +182,35 @@ export default function RegisterScreen({ navigation }) {
           <TouchableOpacity 
             style={styles.button} 
             onPress={handleRegister}
-            disabled={loading}
+            disabled={loading || googleLoading}
           >
             {loading ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
               <Text style={styles.buttonText}>Đăng ký tài khoản</Text>
+            )}
+          </TouchableOpacity>
+
+          {/* Divider */}
+          <View style={styles.dividerContainer}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>Hoặc</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* Google Login Button */}
+          <TouchableOpacity 
+            style={styles.googleButton} 
+            onPress={handleGoogleLogin}
+            disabled={loading || googleLoading}
+          >
+            {googleLoading ? (
+              <ActivityIndicator color="#4f46e5" />
+            ) : (
+              <View style={styles.googleButtonContent}>
+                <FontAwesome name="google" size={20} color="#db4437" style={styles.googleIcon} />
+                <Text style={styles.googleButtonText}>Tiếp tục với Google</Text>
+              </View>
             )}
           </TouchableOpacity>
 
@@ -174,6 +221,15 @@ export default function RegisterScreen({ navigation }) {
               <Text style={styles.linkText}>Đăng nhập ngay</Text>
             </TouchableOpacity>
           </View>
+
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => {
+              navigation.navigate('Main');
+            }}
+          >
+            <Text style={styles.backButtonText}>Quay lại Trang chủ</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -275,5 +331,57 @@ const styles = StyleSheet.create({
     color: '#4f46e5',
     fontWeight: '700',
     fontSize: 14,
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 18,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e2e8f0',
+  },
+  dividerText: {
+    marginHorizontal: 10,
+    color: '#64748b',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  googleButton: {
+    height: 52,
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+    marginBottom: 4,
+  },
+  googleButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  googleIcon: {
+    marginRight: 10,
+  },
+  googleButtonText: {
+    color: '#334155',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  backButton: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  backButtonText: {
+    color: '#64748b',
+    fontSize: 14,
+    fontWeight: '500',
   },
 });

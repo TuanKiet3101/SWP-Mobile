@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  ScrollView, 
-  TouchableOpacity, 
-  ActivityIndicator, 
+import {
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
   Alert,
   RefreshControl
 } from 'react-native';
@@ -68,7 +68,7 @@ export default function MyPassesScreen({ navigation }) {
     try {
       const { data } = await api.post(`/monthly-passes/${id}/repay`);
       const { checkoutUrl, alreadyPaid } = data.data || {};
-      
+
       if (alreadyPaid) {
         Alert.alert('Thông báo', 'Vé tháng này đã được thanh toán rồi.');
         loadPasses();
@@ -76,7 +76,7 @@ export default function MyPassesScreen({ navigation }) {
       }
 
       if (checkoutUrl) {
-        await WebBrowser.openBrowserAsync(checkoutUrl);
+        navigation.navigate('PaymentWebView', { url: checkoutUrl, type: 'pass' });
       } else {
         Alert.alert('Lỗi', 'Không lấy được đường dẫn thanh toán.');
       }
@@ -94,8 +94,8 @@ export default function MyPassesScreen({ navigation }) {
       'Bạn có chắc chắn muốn hủy đăng ký vé tháng này? Số tiền hoàn lại sẽ được tính theo chính sách hoàn tiền.',
       [
         { text: 'Giữ lại', style: 'cancel' },
-        { 
-          text: 'Xác nhận hủy', 
+        {
+          text: 'Xác nhận hủy',
           style: 'destructive',
           onPress: async () => {
             setActionLoading(true);
@@ -151,22 +151,22 @@ export default function MyPassesScreen({ navigation }) {
           </TouchableOpacity>
         </View>
       ) : passes.length === 0 ? (
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.centerEmpty}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadPasses(true)} />}
         >
           <Feather name="credit-card" size={64} color="#cbd5e1" style={{ marginBottom: 16 }} />
           <Text style={styles.emptyTitle}>Chưa đăng ký vé tháng nào</Text>
           <Text style={styles.emptySubtitle}>Khi đăng ký mua vé tháng gửi xe, danh sách sẽ hiển thị ở đây.</Text>
-          <TouchableOpacity 
-            style={styles.buyNowBtn} 
+          <TouchableOpacity
+            style={styles.buyNowBtn}
             onPress={() => navigation.navigate('Reserve', { type: 'monthly' })}
           >
             <Text style={styles.buyNowText}>Mua vé tháng ngay</Text>
           </TouchableOpacity>
         </ScrollView>
       ) : (
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollList}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadPasses(true)} />}
           showsVerticalScrollIndicator={false}
@@ -182,7 +182,7 @@ export default function MyPassesScreen({ navigation }) {
             const statusConfig = STATUS_MAP[pass.status] || { label: pass.status, color: '#64748b', bg: '#f1f5f9' };
             const isPending = pass.status === 'pending';
             const isActive = pass.status === 'active';
-            
+
             return (
               <View key={pass.pass_id} style={styles.passCard}>
                 <View style={styles.cardHeader}>
@@ -221,8 +221,8 @@ export default function MyPassesScreen({ navigation }) {
                 {(isPending || isActive) && (
                   <View style={styles.actionsContainer}>
                     {isPending && (
-                      <TouchableOpacity 
-                        style={styles.payBtn} 
+                      <TouchableOpacity
+                        style={styles.payBtn}
                         onPress={() => handleRepay(pass.pass_id)}
                       >
                         <Feather name="credit-card" size={14} color="#ffffff" style={{ marginRight: 6 }} />
@@ -230,8 +230,8 @@ export default function MyPassesScreen({ navigation }) {
                       </TouchableOpacity>
                     )}
                     {isActive && (
-                      <TouchableOpacity 
-                        style={styles.cancelBtn} 
+                      <TouchableOpacity
+                        style={styles.cancelBtn}
                         onPress={() => handleCancel(pass.pass_id)}
                       >
                         <Feather name="slash" size={14} color="#ef4444" style={{ marginRight: 6 }} />

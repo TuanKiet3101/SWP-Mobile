@@ -19,7 +19,7 @@ export default function HomeScreen({ navigation }) {
     if (isAuthenticated) {
       navigation.navigate('Account');
     } else {
-      navigation.navigate('Register');
+      navigation.navigate('Login');
     }
   };
 

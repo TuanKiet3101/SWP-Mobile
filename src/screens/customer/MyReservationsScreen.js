@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  ScrollView, 
-  TouchableOpacity, 
-  ActivityIndicator, 
+import {
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
   Alert,
   Image,
   RefreshControl,
@@ -40,7 +40,7 @@ export default function MyReservationsScreen({ navigation }) {
 
   // Repay & Cancel states
   const [actionLoading, setActionLoading] = useState(false);
-  
+
   // QR Modal
   const [qrModalVisible, setQrModalVisible] = useState(false);
   const [selectedQrToken, setSelectedQrToken] = useState('');
@@ -117,10 +117,10 @@ export default function MyReservationsScreen({ navigation }) {
           const isToday = dayStr === toDateStr(new Date());
 
           return (
-            <TouchableOpacity 
-              key={`day-${day}`} 
+            <TouchableOpacity
+              key={`day-${day}`}
               style={[
-                styles.calendarCell, 
+                styles.calendarCell,
                 isSelected && styles.calendarCellSelected,
                 isToday && !isSelected && styles.calendarCellToday
               ]}
@@ -193,7 +193,7 @@ export default function MyReservationsScreen({ navigation }) {
     try {
       const { data } = await api.post(`/reservations/${id}/repay`);
       const { checkoutUrl, alreadyPaid } = data.data || {};
-      
+
       if (alreadyPaid) {
         Alert.alert('Thông báo', 'Đơn đặt chỗ này đã được thanh toán rồi.');
         loadReservations();
@@ -201,7 +201,7 @@ export default function MyReservationsScreen({ navigation }) {
       }
 
       if (checkoutUrl) {
-        await WebBrowser.openBrowserAsync(checkoutUrl);
+        navigation.navigate('PaymentWebView', { url: checkoutUrl, type: 'reservation' });
       } else {
         Alert.alert('Lỗi', 'Không lấy được đường dẫn thanh toán.');
       }
@@ -216,7 +216,7 @@ export default function MyReservationsScreen({ navigation }) {
   const openCancelModal = async (res) => {
     setCancelTarget(res);
     setCancelModalVisible(true);
-    
+
     if (res.status === 'pending') {
       setRefundPolicy(null); // Pending cancel has no refund policy details needed
       return;
@@ -268,10 +268,10 @@ export default function MyReservationsScreen({ navigation }) {
 
   const filteredReservations = filterDate
     ? reservations.filter(res => {
-        if (!res.start_time) return false;
-        const resDate = res.start_time.split('T')[0];
-        return resDate === filterDate;
-      })
+      if (!res.start_time) return false;
+      const resDate = res.start_time.split('T')[0];
+      return resDate === filterDate;
+    })
     : reservations;
 
   return (
@@ -315,22 +315,22 @@ export default function MyReservationsScreen({ navigation }) {
           </TouchableOpacity>
         </View>
       ) : reservations.length === 0 ? (
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.centerEmpty}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadReservations(true)} />}
         >
           <Feather name="calendar" size={64} color="#cbd5e1" style={{ marginBottom: 16 }} />
           <Text style={styles.emptyTitle}>Chưa có đơn đặt chỗ nào</Text>
           <Text style={styles.emptySubtitle}>Khi bạn đặt chỗ giữ vị trí đỗ xe trước, danh sách sẽ hiển thị tại đây.</Text>
-          <TouchableOpacity 
-            style={styles.bookNowBtn} 
+          <TouchableOpacity
+            style={styles.bookNowBtn}
             onPress={() => navigation.navigate('Reserve')}
           >
             <Text style={styles.bookNowText}>Đặt chỗ ngay</Text>
           </TouchableOpacity>
         </ScrollView>
       ) : (
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollList}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadReservations(true)} />}
           showsVerticalScrollIndicator={false}
@@ -356,93 +356,93 @@ export default function MyReservationsScreen({ navigation }) {
               const statusConfig = STATUS_MAP[res.status] || { label: res.status, color: '#64748b', bg: '#f1f5f9' };
               const isLive = ['confirmed', 'checked_in'].includes(res.status);
               const isCancellable = ['pending', 'confirmed'].includes(res.status);
-            
-            return (
-              <View key={res.reservation_id} style={styles.resCard}>
-                {/* Status Bar */}
-                <View style={styles.cardHeader}>
-                  <Text style={styles.plateText}>{res.plate_number}</Text>
-                  <View style={[styles.statusBadge, { backgroundColor: statusConfig.bg }]}>
-                    <Text style={[styles.statusText, { color: statusConfig.color }]}>{statusConfig.label}</Text>
+
+              return (
+                <View key={res.reservation_id} style={styles.resCard}>
+                  {/* Status Bar */}
+                  <View style={styles.cardHeader}>
+                    <Text style={styles.plateText}>{res.plate_number}</Text>
+                    <View style={[styles.statusBadge, { backgroundColor: statusConfig.bg }]}>
+                      <Text style={[styles.statusText, { color: statusConfig.color }]}>{statusConfig.label}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.cardDivider} />
+
+                  {/* Info Block */}
+                  <View style={styles.infoBlock}>
+                    <View style={styles.infoRow}>
+                      <Feather name="layers" size={14} color="#64748b" />
+                      <Text style={styles.infoVal}>
+                        {formatFloorLabel(res.floor?.label || res.floor?.floor_code)}
+                        {res.zone?.zone_code ? ` · Khu ${res.zone.zone_code}` : ''}
+                        {res.slot?.slot_code ? ` · Ô đỗ ${res.slot.slot_code}` : ' (Gán tự động)'}
+                      </Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                      <Feather name="clock" size={14} color="#64748b" />
+                      <Text style={styles.infoVal}>
+                        Thời gian: {formatWindow(res.start_time, res.end_time)}
+                      </Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                      <Feather name="truck" size={14} color="#64748b" />
+                      <Text style={styles.infoVal}>
+                        {res.vehicleType?.type_name || 'Phương tiện'}
+                      </Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                      <Feather name="dollar-sign" size={14} color="#64748b" />
+                      <Text style={[styles.infoVal, { fontWeight: '700', color: '#4f46e5' }]}>
+                        Phí đặt: {formatMoney(res.price)}
+                      </Text>
+                    </View>
+                    {res.created_at && (
+                      <Text style={styles.createdAtText}>Ngày đặt: {formatDateTime(res.created_at)}</Text>
+                    )}
+                  </View>
+
+                  {/* Actions */}
+                  <View style={styles.actionsContainer}>
+                    {/* QR Check-in Code */}
+                    {isLive && res.qr_token && (
+                      <TouchableOpacity
+                        style={styles.qrBtn}
+                        onPress={() => showQrCode(res.qr_token, res.plate_number)}
+                      >
+                        <MaterialCommunityIcons name="qrcode" size={18} color="#ffffff" style={{ marginRight: 6 }} />
+                        <Text style={styles.qrBtnText}>Mã QR Vào cổng</Text>
+                      </TouchableOpacity>
+                    )}
+
+                    {/* Repay pending */}
+                    {res.status === 'pending' && (
+                      <TouchableOpacity
+                        style={styles.payBtn}
+                        onPress={() => handleRepay(res.reservation_id)}
+                      >
+                        <Feather name="credit-card" size={16} color="#ffffff" style={{ marginRight: 6 }} />
+                        <Text style={styles.payBtnText}>Thanh toán lại</Text>
+                      </TouchableOpacity>
+                    )}
+
+                    {/* Cancel Button */}
+                    {isCancellable && (
+                      <TouchableOpacity
+                        style={styles.cancelBtn}
+                        onPress={() => openCancelModal(res)}
+                      >
+                        <Feather name="trash-2" size={14} color="#ef4444" style={{ marginRight: 4 }} />
+                        <Text style={styles.cancelBtnText}>Hủy đặt chỗ</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </View>
-
-                <View style={styles.cardDivider} />
-
-                {/* Info Block */}
-                <View style={styles.infoBlock}>
-                  <View style={styles.infoRow}>
-                    <Feather name="layers" size={14} color="#64748b" />
-                    <Text style={styles.infoVal}>
-                      {formatFloorLabel(res.floor?.label || res.floor?.floor_code)}
-                      {res.zone?.zone_code ? ` · Khu ${res.zone.zone_code}` : ''}
-                      {res.slot?.slot_code ? ` · Ô đỗ ${res.slot.slot_code}` : ' (Gán tự động)'}
-                    </Text>
-                  </View>
-                  <View style={styles.infoRow}>
-                    <Feather name="clock" size={14} color="#64748b" />
-                    <Text style={styles.infoVal}>
-                      Thời gian: {formatWindow(res.start_time, res.end_time)}
-                    </Text>
-                  </View>
-                  <View style={styles.infoRow}>
-                    <Feather name="truck" size={14} color="#64748b" />
-                    <Text style={styles.infoVal}>
-                      {res.vehicleType?.type_name || 'Phương tiện'}
-                    </Text>
-                  </View>
-                  <View style={styles.infoRow}>
-                    <Feather name="dollar-sign" size={14} color="#64748b" />
-                    <Text style={[styles.infoVal, { fontWeight: '700', color: '#4f46e5' }]}>
-                      Phí đặt: {formatMoney(res.price)}
-                    </Text>
-                  </View>
-                  {res.created_at && (
-                    <Text style={styles.createdAtText}>Ngày đặt: {formatDateTime(res.created_at)}</Text>
-                  )}
-                </View>
-
-                {/* Actions */}
-                <View style={styles.actionsContainer}>
-                  {/* QR Check-in Code */}
-                  {isLive && res.qr_token && (
-                    <TouchableOpacity 
-                      style={styles.qrBtn} 
-                      onPress={() => showQrCode(res.qr_token, res.plate_number)}
-                    >
-                      <MaterialCommunityIcons name="qrcode" size={18} color="#ffffff" style={{ marginRight: 6 }} />
-                      <Text style={styles.qrBtnText}>Mã QR Vào cổng</Text>
-                    </TouchableOpacity>
-                  )}
-
-                  {/* Repay pending */}
-                  {res.status === 'pending' && (
-                    <TouchableOpacity 
-                      style={styles.payBtn} 
-                      onPress={() => handleRepay(res.reservation_id)}
-                    >
-                      <Feather name="credit-card" size={16} color="#ffffff" style={{ marginRight: 6 }} />
-                      <Text style={styles.payBtnText}>Thanh toán lại</Text>
-                    </TouchableOpacity>
-                  )}
-
-                  {/* Cancel Button */}
-                  {isCancellable && (
-                    <TouchableOpacity 
-                      style={styles.cancelBtn} 
-                      onPress={() => openCancelModal(res)}
-                    >
-                      <Feather name="trash-2" size={14} color="#ef4444" style={{ marginRight: 4 }} />
-                      <Text style={styles.cancelBtnText}>Hủy đặt chỗ</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            );
-          }))}
+              );
+            }))}
         </ScrollView>
       )}
-      
+
 
       {/* QR MODAL */}
       <Modal
@@ -455,14 +455,14 @@ export default function MyReservationsScreen({ navigation }) {
           <View style={styles.qrModalContent}>
             <Text style={styles.qrModalTitle}>QR Check-In</Text>
             <Text style={styles.qrModalSub}>{selectedPlate}</Text>
-            
+
             {selectedQrToken ? (
-              <Image 
+              <Image
                 source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${selectedQrToken}` }}
                 style={styles.qrImage}
               />
             ) : null}
-            
+
             <Text style={styles.qrHelpText}>
               Vui lòng đưa mã này ra trước camera quét QR tại cổng phụ khi vào bãi đỗ xe.
             </Text>
@@ -487,7 +487,7 @@ export default function MyReservationsScreen({ navigation }) {
               <Feather name="alert-triangle" size={24} color="#ef4444" />
             </View>
             <Text style={styles.cancelTitle}>Xác nhận hủy đặt chỗ</Text>
-            
+
             {policyLoading ? (
               <ActivityIndicator size="small" color="#4f46e5" style={{ marginVertical: 10 }} />
             ) : cancelTarget?.status === 'confirmed' ? (
@@ -510,14 +510,14 @@ export default function MyReservationsScreen({ navigation }) {
             )}
 
             <View style={styles.cancelButtons}>
-              <TouchableOpacity 
-                style={styles.cancelKeepBtn} 
+              <TouchableOpacity
+                style={styles.cancelKeepBtn}
                 onPress={() => setCancelModalVisible(false)}
               >
                 <Text style={styles.cancelKeepText}>Giữ lại</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.cancelConfirmBtn} 
+              <TouchableOpacity
+                style={styles.cancelConfirmBtn}
                 onPress={handleCancel}
               >
                 <Text style={styles.cancelConfirmText}>Xác nhận hủy</Text>
@@ -546,12 +546,12 @@ export default function MyReservationsScreen({ navigation }) {
                 <Feather name="chevron-right" size={20} color="#475569" />
               </TouchableOpacity>
             </View>
-            
+
             {/* Grid */}
             {renderFilterCalendar()}
 
-            <TouchableOpacity 
-              style={styles.calendarCloseBtn} 
+            <TouchableOpacity
+              style={styles.calendarCloseBtn}
               onPress={() => setFilterCalendarVisible(false)}
             >
               <Text style={styles.calendarCloseBtnText}>Hủy bỏ</Text>

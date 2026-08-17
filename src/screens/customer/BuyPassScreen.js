@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  TextInput, 
-  TouchableOpacity, 
-  ScrollView, 
-  ActivityIndicator, 
+import {
+  StyleSheet,
+  Text,
+  View,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -63,7 +63,7 @@ function cleanPlateInput(input) {
 function validateAndNormalizePlateVN(input) {
   const s = cleanPlateInput(input);
   if (!s) return { valid: false, normalized: '', error: 'Biển số xe không được trống' };
-  
+
   for (const { re, normalize } of PATTERNS) {
     const m = s.match(re);
     if (m) {
@@ -99,7 +99,7 @@ export default function BuyPassScreen({ navigation }) {
       let rest = clean.slice(2);
       let series = '';
       let numPart = '';
-      
+
       if (rest.length > 0) {
         if (/^[A-Z]{2}/.test(rest)) {
           series = rest.slice(0, 2);
@@ -115,7 +115,7 @@ export default function BuyPassScreen({ navigation }) {
           numPart = rest;
         }
       }
-      
+
       if (series) {
         formatted = `${prov}${series}`;
         if (numPart.length > 0) {
@@ -151,8 +151,8 @@ export default function BuyPassScreen({ navigation }) {
 
   const isPrevMonthDisabled = () => {
     const now = new Date();
-    return calendarYear < now.getFullYear() || 
-           (calendarYear === now.getFullYear() && calendarMonth <= now.getMonth());
+    return calendarYear < now.getFullYear() ||
+      (calendarYear === now.getFullYear() && calendarMonth <= now.getMonth());
   };
 
   const prevMonth = () => {
@@ -206,10 +206,10 @@ export default function BuyPassScreen({ navigation }) {
           const isPast = dayStr < todayStr;
 
           return (
-            <TouchableOpacity 
-              key={`day-${day}`} 
+            <TouchableOpacity
+              key={`day-${day}`}
               style={[
-                styles.calendarCell, 
+                styles.calendarCell,
                 isSelected && styles.calendarCellSelected,
                 isToday && !isSelected && styles.calendarCellToday,
                 isPast && styles.calendarCellDisabled
@@ -331,14 +331,16 @@ export default function BuyPassScreen({ navigation }) {
         'Đăng ký thành công',
         'Đơn mua vé tháng đã được tạo. Bạn sẽ được chuyển tới cổng thanh toán PayOS.',
         [
-          { 
-            text: 'Thanh toán ngay', 
-            onPress: async () => {
+          {
+            text: 'Thanh toán ngay',
+            onPress: () => {
               if (checkoutUrl) {
-                await WebBrowser.openBrowserAsync(checkoutUrl);
+                navigation.replace('Main', { screen: 'Account' });
+                navigation.navigate('PaymentWebView', { url: checkoutUrl, type: 'pass' });
+              } else {
+                navigation.replace('Main', { screen: 'Account' });
               }
-              navigation.replace('Main', { screen: 'Account' });
-            } 
+            }
           }
         ]
       );
@@ -380,13 +382,13 @@ export default function BuyPassScreen({ navigation }) {
         <View style={{ width: 40 }} />
       </View>
 
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <View style={styles.formCard}>
-            
+
             {/* Biển số xe */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Biển số xe đăng ký *</Text>
@@ -410,15 +412,15 @@ export default function BuyPassScreen({ navigation }) {
                 {vehicleTypes.map((vt) => {
                   const isSel = String(vt.vehicle_type_id) === String(selectedVehicleType);
                   return (
-                    <TouchableOpacity 
-                      key={vt.vehicle_type_id} 
+                    <TouchableOpacity
+                      key={vt.vehicle_type_id}
                       style={[styles.optionItem, isSel && styles.optionItemSel]}
                       onPress={() => setSelectedVehicleType(vt.vehicle_type_id)}
                     >
-                      <Feather 
-                        name={vt.type_code?.toLowerCase()?.includes('motor') ? 'navigation' : 'truck'} 
-                        size={16} 
-                        color={isSel ? '#4f46e5' : '#64748b'} 
+                      <Feather
+                        name={vt.type_code?.toLowerCase()?.includes('motor') ? 'navigation' : 'truck'}
+                        size={16}
+                        color={isSel ? '#4f46e5' : '#64748b'}
                       />
                       <Text style={[styles.optionLabel, isSel && styles.optionLabelSel]}>{vt.type_name}</Text>
                     </TouchableOpacity>
@@ -434,8 +436,8 @@ export default function BuyPassScreen({ navigation }) {
                 {floors.map((fl) => {
                   const isSel = String(fl.floor_id) === String(selectedFloor);
                   return (
-                    <TouchableOpacity 
-                      key={fl.floor_id} 
+                    <TouchableOpacity
+                      key={fl.floor_id}
                       style={[styles.optionItem, isSel && styles.optionItemSel]}
                       onPress={() => setSelectedFloor(fl.floor_id)}
                     >
@@ -452,8 +454,8 @@ export default function BuyPassScreen({ navigation }) {
             {/* Ngày hiệu lực */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Ngày bắt đầu hiệu lực *</Text>
-              <TouchableOpacity 
-                style={styles.inputWrapper} 
+              <TouchableOpacity
+                style={styles.inputWrapper}
                 onPress={() => setCalendarVisible(true)}
               >
                 <Feather name="calendar" size={16} color="#4f46e5" style={styles.inputIcon} />
@@ -474,8 +476,8 @@ export default function BuyPassScreen({ navigation }) {
                   <View style={styles.calendarModalContent}>
                     {/* Header controls */}
                     <View style={styles.calendarHeader}>
-                      <TouchableOpacity 
-                        onPress={prevMonth} 
+                      <TouchableOpacity
+                        onPress={prevMonth}
                         style={[styles.calendarArrowBtn, isPrevMonthDisabled() && styles.calendarArrowBtnDisabled]}
                         disabled={isPrevMonthDisabled()}
                       >
@@ -486,12 +488,12 @@ export default function BuyPassScreen({ navigation }) {
                         <Feather name="chevron-right" size={20} color="#475569" />
                       </TouchableOpacity>
                     </View>
-                    
+
                     {/* Grid */}
                     {renderCalendar()}
 
-                    <TouchableOpacity 
-                      style={styles.calendarCloseBtn} 
+                    <TouchableOpacity
+                      style={styles.calendarCloseBtn}
                       onPress={() => setCalendarVisible(false)}
                     >
                       <Text style={styles.calendarCloseBtnText}>Hủy bỏ</Text>
@@ -534,8 +536,8 @@ export default function BuyPassScreen({ navigation }) {
             )}
 
             {/* Submit Button */}
-            <TouchableOpacity 
-              style={[styles.submitBtn, submitting && styles.submitBtnDisabled]} 
+            <TouchableOpacity
+              style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
               onPress={handleBuyPass}
               disabled={submitting}
             >

@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  TextInput, 
-  TouchableOpacity, 
-  ScrollView, 
-  ActivityIndicator, 
+import {
+  StyleSheet,
+  Text,
+  View,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -77,7 +77,7 @@ function cleanPlateInput(input) {
 function validateAndNormalizePlateVN(input) {
   const s = cleanPlateInput(input);
   if (!s) return { valid: false, normalized: '', error: 'Biển số xe không được để trống' };
-  
+
   for (const { re, normalize } of PATTERNS) {
     const m = s.match(re);
     if (m) {
@@ -117,7 +117,7 @@ export default function ReserveScreen({ route, navigation }) {
       let rest = clean.slice(2);
       let series = '';
       let numPart = '';
-      
+
       if (rest.length > 0) {
         if (/^[A-Z]{2}/.test(rest)) {
           series = rest.slice(0, 2);
@@ -133,7 +133,7 @@ export default function ReserveScreen({ route, navigation }) {
           numPart = rest;
         }
       }
-      
+
       if (series) {
         formatted = `${prov}${series}`;
         if (numPart.length > 0) {
@@ -151,7 +151,7 @@ export default function ReserveScreen({ route, navigation }) {
   const [selectedFloor, setSelectedFloor] = useState('');
   const [selectedDate, setSelectedDate] = useState(toDateStr(new Date()));
   const [selectedShift, setSelectedShift] = useState('');
-  
+
   // Real-time capacity preview (daily)
   const [availDetails, setAvailDetails] = useState(null);
   const [availLoading, setAvailLoading] = useState(false);
@@ -184,8 +184,8 @@ export default function ReserveScreen({ route, navigation }) {
 
   const isPrevMonthDisabled = () => {
     const now = new Date();
-    return calendarYear < now.getFullYear() || 
-           (calendarYear === now.getFullYear() && calendarMonth <= now.getMonth());
+    return calendarYear < now.getFullYear() ||
+      (calendarYear === now.getFullYear() && calendarMonth <= now.getMonth());
   };
 
   const isShiftPassed = (shiftId) => {
@@ -263,10 +263,10 @@ export default function ReserveScreen({ route, navigation }) {
           const isPast = dayStr < todayStr;
 
           return (
-            <TouchableOpacity 
-              key={`day-${day}`} 
+            <TouchableOpacity
+              key={`day-${day}`}
               style={[
-                styles.calendarCell, 
+                styles.calendarCell,
                 isSelected && styles.calendarCellSelected,
                 isToday && !isSelected && styles.calendarCellToday,
                 isPast && styles.calendarCellDisabled
@@ -449,19 +449,21 @@ export default function ReserveScreen({ route, navigation }) {
         });
 
         const { checkoutUrl } = data.data || {};
-        
+
         Alert.alert(
           'Đặt chỗ thành công',
           'Đơn đỗ xe đã được khởi tạo. Bạn sẽ được chuyển tới cổng thanh toán PayOS.',
           [
-            { 
-              text: 'Thanh toán ngay', 
-              onPress: async () => {
+            {
+              text: 'Thanh toán ngay',
+              onPress: () => {
                 if (checkoutUrl) {
-                  await WebBrowser.openBrowserAsync(checkoutUrl);
+                  navigation.replace('Main', { screen: 'Account' });
+                  navigation.navigate('PaymentWebView', { url: checkoutUrl, type: 'reservation' });
+                } else {
+                  navigation.replace('Main', { screen: 'Account' });
                 }
-                navigation.replace('Main', { screen: 'Account' });
-              } 
+              }
             }
           ]
         );
@@ -498,14 +500,16 @@ export default function ReserveScreen({ route, navigation }) {
           'Đăng ký thành công',
           'Đơn mua vé tháng đã được tạo. Bạn sẽ được chuyển tới cổng thanh toán PayOS.',
           [
-            { 
-              text: 'Thanh toán ngay', 
-              onPress: async () => {
+            {
+              text: 'Thanh toán ngay',
+              onPress: () => {
                 if (checkoutUrl) {
-                  await WebBrowser.openBrowserAsync(checkoutUrl);
+                  navigation.replace('Main', { screen: 'Account' });
+                  navigation.navigate('PaymentWebView', { url: checkoutUrl, type: 'pass' });
+                } else {
+                  navigation.replace('Main', { screen: 'Account' });
                 }
-                navigation.replace('Main', { screen: 'Account' });
-              } 
+              }
             }
           ]
         );
@@ -541,21 +545,21 @@ export default function ReserveScreen({ route, navigation }) {
         <View style={{ width: 40 }} />
       </View>
 
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          
+
           {/* TAB SELECTOR */}
           <View style={styles.tabContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.tabButton, bookingType === 'daily' && styles.tabButtonActive]}
               onPress={() => setBookingType('daily')}
             >
               <Text style={[styles.tabText, bookingType === 'daily' && styles.tabTextActive]}>Đặt theo ngày</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.tabButton, bookingType === 'monthly' && styles.tabButtonActive]}
               onPress={() => setBookingType('monthly')}
             >
@@ -587,18 +591,18 @@ export default function ReserveScreen({ route, navigation }) {
                 {vehicleTypes.map((vt) => {
                   const isSel = String(vt.vehicle_type_id) === String(selectedVehicleType);
                   return (
-                    <TouchableOpacity 
-                      key={vt.vehicle_type_id} 
+                    <TouchableOpacity
+                      key={vt.vehicle_type_id}
                       style={[styles.optionItem, isSel && styles.optionItemSel]}
                       onPress={() => {
                         setSelectedVehicleType(vt.vehicle_type_id);
                         setSelectedFloor(''); // Reset floor
                       }}
                     >
-                      <Feather 
-                        name={vt.type_code?.toLowerCase()?.includes('motor') ? 'navigation' : 'truck'} 
-                        size={16} 
-                        color={isSel ? '#4f46e5' : '#64748b'} 
+                      <Feather
+                        name={vt.type_code?.toLowerCase()?.includes('motor') ? 'navigation' : 'truck'}
+                        size={16}
+                        color={isSel ? '#4f46e5' : '#64748b'}
                       />
                       <Text style={[styles.optionLabel, isSel && styles.optionLabelSel]}>{vt.type_name}</Text>
                     </TouchableOpacity>
@@ -614,8 +618,8 @@ export default function ReserveScreen({ route, navigation }) {
                 {filteredFloors.map((fl) => {
                   const isSel = String(fl.floor_id) === String(selectedFloor);
                   return (
-                    <TouchableOpacity 
-                      key={fl.floor_id} 
+                    <TouchableOpacity
+                      key={fl.floor_id}
                       style={[styles.optionItem, isSel && styles.optionItemSel]}
                       onPress={() => setSelectedFloor(fl.floor_id)}
                     >
@@ -634,8 +638,8 @@ export default function ReserveScreen({ route, navigation }) {
               <Text style={styles.label}>
                 {bookingType === 'daily' ? 'Ngày đến *' : 'Ngày bắt đầu hiệu lực *'}
               </Text>
-              <TouchableOpacity 
-                style={styles.inputWrapper} 
+              <TouchableOpacity
+                style={styles.inputWrapper}
                 onPress={() => setCalendarVisible(true)}
               >
                 <Feather name="calendar" size={16} color="#4f46e5" style={styles.inputIcon} />
@@ -656,8 +660,8 @@ export default function ReserveScreen({ route, navigation }) {
                   <View style={styles.calendarModalContent}>
                     {/* Header controls */}
                     <View style={styles.calendarHeader}>
-                      <TouchableOpacity 
-                        onPress={prevMonth} 
+                      <TouchableOpacity
+                        onPress={prevMonth}
                         style={[styles.calendarArrowBtn, isPrevMonthDisabled() && styles.calendarArrowBtnDisabled]}
                         disabled={isPrevMonthDisabled()}
                       >
@@ -668,12 +672,12 @@ export default function ReserveScreen({ route, navigation }) {
                         <Feather name="chevron-right" size={20} color="#475569" />
                       </TouchableOpacity>
                     </View>
-                    
+
                     {/* Grid */}
                     {renderCalendar()}
 
-                    <TouchableOpacity 
-                      style={styles.calendarCloseBtn} 
+                    <TouchableOpacity
+                      style={styles.calendarCloseBtn}
                       onPress={() => setCalendarVisible(false)}
                     >
                       <Text style={styles.calendarCloseBtnText}>Hủy bỏ</Text>
@@ -692,10 +696,10 @@ export default function ReserveScreen({ route, navigation }) {
                     const isSel = sf.id === selectedShift;
                     const isPassed = isShiftPassed(sf.id);
                     return (
-                      <TouchableOpacity 
-                        key={sf.id} 
+                      <TouchableOpacity
+                        key={sf.id}
                         style={[
-                          styles.shiftItem, 
+                          styles.shiftItem,
                           isSel && styles.shiftItemSel,
                           isPassed && styles.shiftItemDisabled
                         ]}
@@ -706,12 +710,12 @@ export default function ReserveScreen({ route, navigation }) {
                         disabled={isPassed}
                       >
                         <Text style={[
-                          styles.shiftLabel, 
+                          styles.shiftLabel,
                           isSel && styles.shiftLabelSel,
                           isPassed && styles.shiftLabelDisabled
                         ]}>{sf.label}</Text>
                         <Text style={[
-                          styles.shiftTime, 
+                          styles.shiftTime,
                           isSel && styles.shiftTimeSel,
                           isPassed && styles.shiftTimeDisabled
                         ]}>{sf.start} - {sf.end}</Text>
@@ -732,18 +736,18 @@ export default function ReserveScreen({ route, navigation }) {
                   </View>
                 ) : availDetails ? (
                   <View style={styles.availRow}>
-                    <Feather 
-                      name={availDetails.canBook ? "check-circle" : "x-circle"} 
-                      size={20} 
-                      color={availDetails.canBook ? "#10b981" : "#ef4444"} 
+                    <Feather
+                      name={availDetails.canBook ? "check-circle" : "x-circle"}
+                      size={20}
+                      color={availDetails.canBook ? "#10b981" : "#ef4444"}
                     />
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.availTitle, { color: availDetails.canBook ? "#10b981" : "#ef4444" }]}>
-                        {availDetails.canBook ? `Còn trống ${availDetails.available} chỗ` : 'Đã hết vị trí trống'}
+                        {availDetails.canBook ? `Còn trống ${availDetails.available ?? availDetails.availableSlots ?? availDetails.availableCount ?? availDetails.remaining ?? availDetails.count ?? availDetails.slots ?? 0} chỗ` : 'Đã hết vị trí trống'}
                       </Text>
                       <Text style={styles.availSub}>
-                        {availDetails.canBook 
-                          ? 'Hệ thống sẽ gán vị trí tốt nhất khi xe vào bãi.' 
+                        {availDetails.canBook
+                          ? 'Hệ thống sẽ gán vị trí tốt nhất khi xe vào bãi.'
                           : 'Vui lòng chọn tầng đỗ hoặc ca khác.'}
                       </Text>
                       {publicInfo?.bookingFee !== undefined && (
@@ -792,8 +796,8 @@ export default function ReserveScreen({ route, navigation }) {
             )}
 
             {/* Submit Button */}
-            <TouchableOpacity 
-              style={[styles.submitBtn, submitting && styles.submitBtnDisabled]} 
+            <TouchableOpacity
+              style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
               onPress={handleBooking}
               disabled={submitting}
             >
@@ -803,8 +807,8 @@ export default function ReserveScreen({ route, navigation }) {
                 <>
                   <Feather name={bookingType === 'daily' ? 'bookmark' : 'shopping-bag'} size={18} color="#ffffff" style={{ marginRight: 6 }} />
                   <Text style={styles.submitBtnText}>
-                    {bookingType === 'daily' 
-                      ? `Đặt chỗ đỗ & Thanh toán (${formatMoney(publicInfo?.bookingFee || 0)})` 
+                    {bookingType === 'daily'
+                      ? `Đặt chỗ đỗ & Thanh toán (${formatMoney(publicInfo?.bookingFee || 0)})`
                       : `Đăng ký & Thanh toán (${formatMoney(passCapacity?.price || publicInfo?.monthlyPassPrice || 0)})`}
                   </Text>
                 </>

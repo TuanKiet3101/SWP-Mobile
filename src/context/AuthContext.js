@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import api from '../config/api';
 
 const AuthContext = createContext(null);
@@ -7,6 +8,16 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Cấu hình Google Sign-in khi Provider được khởi tạo
+  useEffect(() => {
+    GoogleSignin.configure({
+      // Lấy Web Client ID từ file .env (hỗ trợ cả Expo và RN thông thường)
+      webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || process.env.GOOGLE_WEB_CLIENT_ID,
+      iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || process.env.GOOGLE_IOS_CLIENT_ID,
+      offlineAccess: true,
+    });
+  }, []);
 
   const clearSession = useCallback(async () => {
     try {
@@ -66,6 +77,42 @@ export const AuthProvider = ({ children }) => {
     return data.data;
   };
 
+  // Đăng nhập / Đăng ký bằng Google
+  const loginWithGoogle = async () => {
+    try {
+      await clearSession();
+      
+      // Kiểm tra thiết bị có Google Play Services (chỉ ảnh hưởng trên Android)
+      await GoogleSignin.hasPlayServices();
+      
+      // Mở Popup đăng nhập của Google
+      const userInfo = await GoogleSignin.signIn();
+      
+      // Lấy idToken tương thích với các phiên bản thư viện cũ & mới
+      const idToken = userInfo.idToken || (userInfo.data && userInfo.data.idToken);
+      
+      if (!idToken) {
+        throw new Error('Không lấy được Google idToken từ thiết bị');
+      }
+
+      // Gửi idToken lên API backend
+      const { data } = await api.post('/auth/google', { idToken });
+      
+      const token = data.data.token;
+      const userData = data.data.user;
+
+      // Lưu JWT Token và User Info vào AsyncStorage
+      await AsyncStorage.setItem('userToken', token);
+      await AsyncStorage.setItem('userInfo', JSON.stringify(userData));
+      
+      setUser(userData);
+      return data.data;
+    } catch (error) {
+      console.warn('Lỗi đăng nhập Google:', error);
+      throw error;
+    }
+  };
+
   const register = async (payload) => {
     const { data } = await api.post('/auth/register', payload);
     return data.data;
@@ -76,7 +123,14 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
+  // Cập nhật hàm logout để đăng xuất cả tài khoản Google
   const logout = useCallback(async () => {
+    try {
+      // Đăng xuất Google để lần sau người dùng có thể chọn tài khoản khác
+      await GoogleSignin.signOut();
+    } catch (error) {
+      console.warn('Lỗi khi đăng xuất Google:', error);
+    }
     await clearSession();
   }, [clearSession]);
 
@@ -95,6 +149,7 @@ export const AuthProvider = ({ children }) => {
         user, 
         loading, 
         login, 
+        loginWithGoogle, // Export hàm đăng nhập Google
         register, 
         resendVerification,
         logout, 

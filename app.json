@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.nguyentrunghieu2004pk.pmbs_mobile"
+      "bundleIdentifier": "com.nguyentrunghieu2004pk.pmbsmobile"
     },
     "android": {
       "adaptiveIcon": {
@@ -29,7 +29,14 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.827354777283-uhsekrjutv2rv6p5kaqooatq6lfk4tgi"
+        }
+      ],
+      "expo-font"
     ]
   }
 }

@@ -12,17 +12,34 @@ import {
   ScrollView 
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
-import { Feather } from '@expo/vector-icons';
+import { Feather, FontAwesome } from '@expo/vector-icons';
 
 export default function LoginScreen({ navigation }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [secureText, setSecureText] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [needVerify, setNeedVerify] = useState(false);
   const [resendEmail, setResendEmail] = useState('');
   const [resending, setResending] = useState(false);
-  const { login, resendVerification } = useAuth();
+  const { login, loginWithGoogle, resendVerification } = useAuth();
+
+  const navigateAfterLogin = () => {
+    const routes = navigation.getState()?.routes;
+    const prevRoute = routes && routes.length > 1 ? routes[routes.length - 2] : null;
+    
+    if (prevRoute && prevRoute.name === 'Register') {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Main' }],
+      });
+    } else if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.replace('Main');
+    }
+  };
 
   const handleResend = async () => {
     if (!resendEmail.trim()) {
@@ -53,12 +70,8 @@ export default function LoginScreen({ navigation }) {
     setNeedVerify(false);
     try {
       await login(username.trim(), password);
-      // Đăng nhập thành công, quay lại trang trước hoặc chuyển sang Main
-      if (navigation.canGoBack()) {
-        navigation.goBack();
-      } else {
-        navigation.replace('Main');
-      }
+      // Đăng nhập thành công, điều hướng an toàn
+      navigateAfterLogin();
     } catch (error) {
       console.error(error);
       let errorMsg = 'Có lỗi xảy ra, vui lòng thử lại sau.';
@@ -74,6 +87,26 @@ export default function LoginScreen({ navigation }) {
       Alert.alert('Đăng nhập thất bại', errorMsg);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    try {
+      await loginWithGoogle();
+      navigateAfterLogin();
+    } catch (error) {
+      console.error('Google login error:', error);
+      const errorStr = String(error);
+      if (!errorStr.includes('cancel') && !errorStr.includes('SIGN_IN_CANCELLED')) {
+        let errorMsg = 'Đăng nhập bằng Google thất bại. Vui lòng thử lại.';
+        if (error.response) {
+          errorMsg = error.response.data?.error?.message || errorMsg;
+        }
+        Alert.alert('Thất bại', errorMsg);
+      }
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -173,6 +206,29 @@ export default function LoginScreen({ navigation }) {
             )}
           </TouchableOpacity>
 
+          {/* Divider */}
+          <View style={styles.dividerContainer}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>Hoặc</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* Google Login Button */}
+          <TouchableOpacity 
+            style={styles.googleButton} 
+            onPress={handleGoogleLogin}
+            disabled={loading || googleLoading}
+          >
+            {googleLoading ? (
+              <ActivityIndicator color="#4f46e5" />
+            ) : (
+              <View style={styles.googleButtonContent}>
+                <FontAwesome name="google" size={20} color="#db4437" style={styles.googleIcon} />
+                <Text style={styles.googleButtonText}>Tiếp tục với Google</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
 
           {/* Navigation Links */}
           <View style={styles.footerLinks}>
@@ -185,11 +241,7 @@ export default function LoginScreen({ navigation }) {
           <TouchableOpacity 
             style={styles.backButton}
             onPress={() => {
-              if (navigation.canGoBack()) {
-                navigation.goBack();
-              } else {
-                navigation.replace('Main');
-              }
+              navigation.navigate('Main');
             }}
           >
             <Text style={styles.backButtonText}>Quay lại Trang chủ</Text>
@@ -359,6 +411,49 @@ const styles = StyleSheet.create({
   verifyButtonText: {
     color: '#ffffff',
     fontSize: 13,
+    fontWeight: '600',
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 18,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e2e8f0',
+  },
+  dividerText: {
+    marginHorizontal: 10,
+    color: '#64748b',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  googleButton: {
+    height: 52,
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+    marginBottom: 4,
+  },
+  googleButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  googleIcon: {
+    marginRight: 10,
+  },
+  googleButtonText: {
+    color: '#334155',
+    fontSize: 16,
     fontWeight: '600',
   },
 });
