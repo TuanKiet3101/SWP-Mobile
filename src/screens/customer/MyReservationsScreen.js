@@ -9,12 +9,59 @@ import {
   Alert,
   Image,
   RefreshControl,
-  Modal
+  Modal,
+  TextInput,
+  FlatList
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import api from '../../config/api';
+import { useAuth } from '../../context/AuthContext';
+
+const VIETNAM_BANKS = [
+  { code: 'VCB', shortName: 'VIETCOMBANK', name: 'Ngân hàng TMCP Ngoại Thương Việt Nam' },
+  { code: 'CTG', shortName: 'VIETINBANK', name: 'Ngân hàng TMCP Công Thương Việt Nam' },
+  { code: 'BIDV', shortName: 'BIDV', name: 'Ngân hàng TMCP Đầu tư và Phát triển Việt Nam' },
+  { code: 'VBA', shortName: 'AGRIBANK', name: 'Ngân hàng Nông nghiệp và Phát triển Nông thôn Việt Nam' },
+  { code: 'TCB', shortName: 'TECHCOMBANK', name: 'Ngân hàng TMCP Kỹ Thương Việt Nam' },
+  { code: 'MB', shortName: 'MBBANK', name: 'Ngân hàng TMCP Quân Đội' },
+  { code: 'ACB', shortName: 'ACB', name: 'Ngân hàng TMCP Á Châu' },
+  { code: 'VPB', shortName: 'VPBANK', name: 'Ngân hàng TMCP Việt Nam Thịnh Vượng' },
+  { code: 'TPB', shortName: 'TPBANK', name: 'Ngân hàng TMCP Tiên Phong' },
+  { code: 'STB', shortName: 'SACOMBANK', name: 'Ngân hàng TMCP Sài Gòn Thương Tín' },
+  { code: 'HDB', shortName: 'HDBANK', name: 'Ngân hàng TMCP Phát triển TP.HCM' },
+  { code: 'VIB', shortName: 'VIB', name: 'Ngân hàng TMCP Quốc Tế Việt Nam' },
+  { code: 'MSB', shortName: 'MSB', name: 'Ngân hàng TMCP Hàng Hải Việt Nam' },
+  { code: 'SHB', shortName: 'SHB', name: 'Ngân hàng TMCP Sài Gòn - Hà Nội' },
+  { code: 'LPB', shortName: 'LPBANK', name: 'Ngân hàng TMCP Lộc Phát Việt Nam' },
+  { code: 'SSB', shortName: 'SEABANK', name: 'Ngân hàng TMCP Đông Nam Á' },
+  { code: 'OCB', shortName: 'OCB', name: 'Ngân hàng TMCP Phương Đông' },
+  { code: 'EIB', shortName: 'EXIMBANK', name: 'Ngân hàng TMCP Xuất Nhập Khẩu Việt Nam' },
+  { code: 'SCB', shortName: 'SCB', name: 'Ngân hàng TMCP Sài Gòn' },
+  { code: 'BAB', shortName: 'BAC A BANK', name: 'Ngân hàng TMCP Bắc Á' },
+  { code: 'BVB', shortName: 'BAOVIET BANK', name: 'Ngân hàng TMCP Bảo Việt' },
+  { code: 'VAB', shortName: 'VIET A BANK', name: 'Ngân hàng TMCP Việt Á' },
+  { code: 'VBB', shortName: 'VIETBANK', name: 'Ngân hàng TMCP Việt Nam Thương Tín' },
+  { code: 'NAB', shortName: 'NAM A BANK', name: 'Ngân hàng TMCP Nam Á' },
+  { code: 'KLB', shortName: 'KIENLONG BANK', name: 'Ngân hàng TMCP Kiên Long' },
+  { code: 'PGB', shortName: 'PGBANK', name: 'Ngân hàng TMCP Thịnh vượng và Phát triển' },
+  { code: 'NCB', shortName: 'NCB', name: 'Ngân hàng TMCP Quốc Dân' },
+  { code: 'GPB', shortName: 'GPBANK', name: 'Ngân hàng TNHH MTV Dầu Khí Toàn Cầu' },
+  { code: 'OJB', shortName: 'OCEANBANK', name: 'Ngân hàng TNHH MTV Đại Dương' },
+  { code: 'VRB', shortName: 'VRB', name: 'Ngân hàng Liên doanh Việt - Nga' },
+  { code: 'PBVN', shortName: 'PUBLIC BANK', name: 'Ngân hàng TNHH MTV Public Việt Nam' },
+  { code: 'HLBVN', shortName: 'HONG LEONG BANK', name: 'Ngân hàng TNHH MTV Hong Leong Việt Nam' },
+  { code: 'SHBVN', shortName: 'SHINHAN BANK', name: 'Ngân hàng TNHH MTV Shinhan Việt Nam' },
+  { code: 'WVN', shortName: 'WOORI BANK', name: 'Ngân hàng TNHH MTV Woori Việt Nam' },
+  { code: 'SCVN', shortName: 'STANDARD CHARTERED', name: 'Ngân hàng TNHH MTV Standard Chartered Việt Nam' },
+  { code: 'HSBC', shortName: 'HSBC', name: 'Ngân hàng TNHH MTV HSBC Việt Nam' },
+  { code: 'CITI', shortName: 'CITIBANK', name: 'Ngân hàng Citibank Việt Nam' },
+  { code: 'CBBANK', shortName: 'CBBANK', name: 'Ngân hàng Thương mại TNHH MTV Xây dựng Việt Nam' },
+  { code: 'SAIGONBANK', shortName: 'SAIGONBANK', name: 'Ngân hàng TMCP Sài Gòn Công Thương' },
+  { code: 'DONGABANK', shortName: 'DONG A BANK', name: 'Ngân hàng TMCP Đông Á' },
+  { code: 'KASIKORN', shortName: 'KASIKORNBANK', name: 'Ngân hàng KASIKORNBANK' },
+];
 
 const STATUS_MAP = {
   pending: { label: 'Chờ thanh toán', color: '#f59e0b', bg: '#fef3c7' },
@@ -33,6 +80,7 @@ const SHIFTS = {
 };
 
 export default function MyReservationsScreen({ navigation }) {
+  const { user, updateUser } = useAuth();
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -51,6 +99,46 @@ export default function MyReservationsScreen({ navigation }) {
   const [cancelTarget, setCancelTarget] = useState(null);
   const [refundPolicy, setRefundPolicy] = useState(null);
   const [policyLoading, setPolicyLoading] = useState(false);
+
+  // Bank Info States
+  const [bankName, setBankName] = useState('');
+  const [bankAccountNumber, setBankAccountNumber] = useState('');
+  const [bankAccountHolder, setBankAccountHolder] = useState('');
+  const [bankRequired, setBankRequired] = useState(false);
+  const [bankModalVisible, setBankModalVisible] = useState(false);
+  const [bankSearchQuery, setBankSearchQuery] = useState('');
+
+  // PayOS & Cancel Success Modals States
+  const [payosModalVisible, setPayosModalVisible] = useState(false);
+  const [payosCheckoutUrl, setPayosCheckoutUrl] = useState('');
+  const [payosType, setPayosType] = useState('');
+  const [cancelSuccessModalVisible, setCancelSuccessModalVisible] = useState(false);
+
+  const triggerPayosRedirect = (url, type) => {
+    setPayosCheckoutUrl(url);
+    setPayosType(type);
+    setPayosModalVisible(true);
+    
+    // Auto-redirect after 1.5 seconds
+    setTimeout(() => {
+      setPayosModalVisible((visible) => {
+        if (visible) {
+          navigation.navigate('PaymentWebView', { url, type });
+        }
+        return false;
+      });
+    }, 1500);
+  };
+
+  const filteredBanks = VIETNAM_BANKS.filter((b) => {
+    const query = bankSearchQuery.toUpperCase().trim();
+    if (!query) return true;
+    return (
+      b.code.includes(query) ||
+      b.shortName.includes(query) ||
+      b.name.toUpperCase().includes(query)
+    );
+  });
 
   // Filter date states
   const [filterDate, setFilterDate] = useState('');
@@ -201,7 +289,7 @@ export default function MyReservationsScreen({ navigation }) {
       }
 
       if (checkoutUrl) {
-        navigation.navigate('PaymentWebView', { url: checkoutUrl, type: 'reservation' });
+        triggerPayosRedirect(checkoutUrl, 'reservation');
       } else {
         Alert.alert('Lỗi', 'Không lấy được đường dẫn thanh toán.');
       }
@@ -216,10 +304,21 @@ export default function MyReservationsScreen({ navigation }) {
   const openCancelModal = async (res) => {
     setCancelTarget(res);
     setCancelModalVisible(true);
+    setBankName('');
+    setBankAccountNumber('');
+    setBankAccountHolder('');
+    setBankRequired(false);
+    setBankModalVisible(false);
+    setBankSearchQuery('');
 
     if (res.status === 'pending') {
       setRefundPolicy(null); // Pending cancel has no refund policy details needed
       return;
+    }
+
+    const hasBank = user?.bankAccountNumber || user?.bank_account_number;
+    if (!hasBank) {
+      setBankRequired(true);
     }
 
     setPolicyLoading(true);
@@ -236,15 +335,55 @@ export default function MyReservationsScreen({ navigation }) {
 
   const handleCancel = async () => {
     if (!cancelTarget) return;
+
+    if (bankRequired) {
+      if (!bankName.trim() || !bankAccountNumber.trim() || !bankAccountHolder.trim()) {
+        Alert.alert('Thông báo', 'Vui lòng điền đầy đủ thông tin tài khoản ngân hàng để nhận hoàn tiền.');
+        return;
+      }
+      if (!/^\d{6,30}$/.test(bankAccountNumber.trim())) {
+        Alert.alert('Thông báo', 'Số tài khoản ngân hàng chỉ chứa số (từ 6 đến 30 chữ số).');
+        return;
+      }
+    }
+
     setCancelModalVisible(false);
     setActionLoading(true);
     try {
-      const { data } = await api.post(`/reservations/${cancelTarget.reservation_id}/cancel`);
-      Alert.alert('Thành công', data.message || 'Đã hủy đặt chỗ thành công.');
+      const payload = bankRequired ? {
+        bankName: bankName.trim(),
+        bankAccountNumber: bankAccountNumber.trim(),
+        bankAccountHolder: bankAccountHolder.trim()
+      } : undefined;
+
+      const { data } = await api.post(`/reservations/${cancelTarget.reservation_id}/cancel`, payload);
+      
+      if (bankRequired && user) {
+        updateUser({
+          ...user,
+          bankName: bankName.trim(),
+          bankAccountNumber: bankAccountNumber.trim(),
+          bankAccountHolder: bankAccountHolder.trim(),
+          bank_name: bankName.trim(),
+          bank_account_number: bankAccountNumber.trim(),
+          bank_account_holder: bankAccountHolder.trim(),
+        });
+      }
+
+      setCancelSuccessModalVisible(true);
       loadReservations();
     } catch (err) {
       console.error(err);
-      Alert.alert('Lỗi', err.response?.data?.error?.message || 'Hủy đặt chỗ thất bại.');
+      const code = err.response?.data?.error?.code;
+      const msg = err.response?.data?.error?.message;
+
+      if (code === 'BANK_INFO_REQUIRED') {
+        setBankRequired(true);
+        setCancelModalVisible(true);
+        Alert.alert('Thông báo', msg || 'Vui lòng cung cấp tài khoản ngân hàng nhận hoàn tiền.');
+      } else {
+        Alert.alert('Lỗi', msg || 'Hủy đặt chỗ thất bại.');
+      }
     } finally {
       setActionLoading(false);
       setCancelTarget(null);
@@ -491,18 +630,51 @@ export default function MyReservationsScreen({ navigation }) {
             {policyLoading ? (
               <ActivityIndicator size="small" color="#4f46e5" style={{ marginVertical: 10 }} />
             ) : cancelTarget?.status === 'confirmed' ? (
-              <View style={styles.policyBlock}>
-                <Text style={styles.policyTitle}>Chính sách hoàn tiền:</Text>
-                <Text style={styles.policyText}>
-                  • Hủy trước khi ca đỗ bắt đầu {refundPolicy?.cutoffHours || 1} giờ: Hoàn trả {refundPolicy?.refundPercent || 100}% số tiền.
-                </Text>
-                <Text style={styles.policyText}>
-                  • Hủy sau mốc trên: Không được hoàn trả chi phí.
-                </Text>
-                <Text style={styles.policyWarning}>
-                  Hệ thống tự động thực hiện hoàn tiền vào tài khoản ngân hàng liên kết.
-                </Text>
-              </View>
+              <>
+                <View style={styles.policyBlock}>
+                  <Text style={styles.policyTitle}>Chính sách hoàn tiền:</Text>
+                  <Text style={styles.policyText}>
+                    • Hủy trước khi ca đỗ bắt đầu {refundPolicy?.cutoffHours || 1} giờ: Hoàn trả {refundPolicy?.refundPercent || 100}% số tiền.
+                  </Text>
+                  <Text style={styles.policyText}>
+                    • Hủy sau mốc trên: Không được hoàn trả chi phí.
+                  </Text>
+                  <Text style={styles.policyWarning}>
+                    Hệ thống tự động thực hiện hoàn tiền vào tài khoản ngân hàng liên kết.
+                  </Text>
+                </View>
+
+                {bankRequired && (
+                  <View style={styles.bankFieldsContainer}>
+                    <Text style={styles.bankInputTitle}>Nhập tài khoản nhận tiền hoàn:</Text>
+                    <TouchableOpacity
+                      style={[styles.bankInput, { justifyContent: 'center' }]}
+                      onPress={() => setBankModalVisible(true)}
+                    >
+                      <Text style={{ fontSize: 13.5, color: bankName ? '#334155' : '#94a3b8' }}>
+                        {bankName || 'Chọn ngân hàng từ danh sách'}
+                      </Text>
+                    </TouchableOpacity>
+                    <TextInput
+                      style={styles.bankInput}
+                      placeholder="Số tài khoản"
+                      placeholderTextColor="#94a3b8"
+                      value={bankAccountNumber}
+                      onChangeText={setBankAccountNumber}
+                      keyboardType="numeric"
+                      maxLength={30}
+                    />
+                    <TextInput
+                      style={styles.bankInput}
+                      placeholder="Tên chủ tài khoản (viết hoa không dấu)"
+                      placeholderTextColor="#94a3b8"
+                      value={bankAccountHolder}
+                      onChangeText={(val) => setBankAccountHolder(val.toUpperCase())}
+                      maxLength={100}
+                    />
+                  </View>
+                )}
+              </>
             ) : (
               <Text style={styles.cancelDesc}>
                 Bạn có chắc chắn muốn hủy đơn đỗ xe này? Đơn chưa thanh toán sẽ bị hủy ngay lập tức.
@@ -555,6 +727,117 @@ export default function MyReservationsScreen({ navigation }) {
               onPress={() => setFilterCalendarVisible(false)}
             >
               <Text style={styles.calendarCloseBtnText}>Hủy bỏ</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      {/* Modal Chọn Ngân Hàng */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={bankModalVisible}
+        onRequestClose={() => setBankModalVisible(false)}
+      >
+        <View style={styles.bankModalOverlay}>
+          <View style={styles.bankModalContent}>
+            <View style={styles.bankModalHeader}>
+              <Text style={styles.bankModalTitle}>Chọn Ngân Hàng</Text>
+              <TouchableOpacity onPress={() => setBankModalVisible(false)} style={styles.bankModalCloseBtn}>
+                <Feather name="x" size={20} color="#0f172a" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.bankSearchWrapper}>
+              <Feather name="search" size={16} color="#64748b" style={styles.bankSearchIcon} />
+              <TextInput
+                style={styles.bankSearchInput}
+                placeholder="Tìm kiếm ngân hàng..."
+                placeholderTextColor="#94a3b8"
+                value={bankSearchQuery}
+                onChangeText={setBankSearchQuery}
+                autoCapitalize="characters"
+              />
+            </View>
+
+            <FlatList
+              data={filteredBanks}
+              keyExtractor={(item) => item.code}
+              showsVerticalScrollIndicator={false}
+              style={{ width: '100%', flex: 1 }}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.bankItem}
+                  onPress={() => {
+                    setBankName(item.shortName);
+                    setBankModalVisible(false);
+                    setBankSearchQuery('');
+                  }}
+                >
+                  <View style={styles.bankItemTextContainer}>
+                    <Text style={styles.bankItemShortName}>{item.shortName}</Text>
+                    <Text style={styles.bankItemFullName}>{item.name}</Text>
+                  </View>
+                  <Feather name="chevron-right" size={16} color="#94a3b8" />
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL THÔNG BÁO CHUYỂN SANG PAYOS */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={payosModalVisible}
+        onRequestClose={() => setPayosModalVisible(false)}
+      >
+        <View style={styles.payosModalOverlay}>
+          <View style={styles.payosModalContent}>
+            <View style={styles.payosIconContainer}>
+              <Feather name="credit-card" size={28} color="#4f46e5" />
+            </View>
+            <Text style={styles.payosModalTitle}>Đang chuyển hướng...</Text>
+            <Text style={styles.payosModalDesc}>
+              Hệ thống đang kết nối bảo mật đến cổng thanh toán PayOS. Vui lòng giữ kết nối internet và không tắt ứng dụng.
+            </Text>
+            <ActivityIndicator size="small" color="#4f46e5" style={{ marginVertical: 14 }} />
+            <TouchableOpacity
+              style={styles.payosConfirmBtn}
+              onPress={() => {
+                setPayosModalVisible(false);
+                if (payosCheckoutUrl) {
+                  navigation.navigate('PaymentWebView', { url: payosCheckoutUrl, type: payosType });
+                }
+              }}
+            >
+              <Text style={styles.payosConfirmBtnText}>Thanh toán ngay</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL THÔNG BÁO HỦY VÉ THÀNH CÔNG */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={cancelSuccessModalVisible}
+        onRequestClose={() => setCancelSuccessModalVisible(false)}
+      >
+        <View style={styles.successModalOverlay}>
+          <View style={styles.successModalContent}>
+            <View style={styles.successIconContainer}>
+              <Feather name="check-circle" size={32} color="#10b981" />
+            </View>
+            <Text style={styles.successModalTitle}>Hủy đặt chỗ thành công</Text>
+            <Text style={styles.successModalDesc}>
+              Đơn đặt chỗ của bạn đã được hủy thành công. Số tiền hoàn lại sẽ được tự động hoàn về tài khoản ngân hàng liên kết của bạn.
+            </Text>
+            <TouchableOpacity
+              style={styles.successConfirmBtn}
+              onPress={() => setCancelSuccessModalVisible(false)}
+            >
+              <Text style={styles.successConfirmBtnText}>Đồng ý</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1109,5 +1392,201 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#64748b',
     fontWeight: '600',
+  },
+  bankFieldsContainer: {
+    width: '100%',
+    marginBottom: 20,
+    gap: 10,
+  },
+  bankInputTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: 4,
+    alignSelf: 'flex-start',
+  },
+  bankInput: {
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 8,
+    height: 40,
+    paddingHorizontal: 12,
+    fontSize: 13.5,
+    color: '#334155',
+    backgroundColor: '#ffffff',
+    width: '100%',
+  },
+  bankModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  bankModalContent: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    height: '75%',
+    padding: 20,
+    alignItems: 'center',
+  },
+  bankModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 16,
+  },
+  bankModalTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  bankModalCloseBtn: {
+    padding: 4,
+  },
+  bankSearchWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 12,
+    height: 44,
+    paddingHorizontal: 12,
+    backgroundColor: '#f8fafc',
+    marginBottom: 16,
+    width: '100%',
+  },
+  bankSearchIcon: {
+    marginRight: 8,
+  },
+  bankSearchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#334155',
+    height: '100%',
+    padding: 0,
+  },
+  bankItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+    width: '100%',
+  },
+  bankItemTextContainer: {
+    flex: 1,
+    marginRight: 12,
+  },
+  bankItemShortName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#4f46e5',
+  },
+  bankItemFullName: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 2,
+  },
+  payosModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  payosModalContent: {
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 24,
+    width: '100%',
+    maxWidth: 320,
+    alignItems: 'center',
+  },
+  payosIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#eef2ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  payosModalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginBottom: 8,
+  },
+  payosModalDesc: {
+    fontSize: 13,
+    color: '#64748b',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  payosConfirmBtn: {
+    backgroundColor: '#4f46e5',
+    borderRadius: 12,
+    height: 44,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  payosConfirmBtnText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  successModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  successModalContent: {
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 24,
+    width: '100%',
+    maxWidth: 320,
+    alignItems: 'center',
+  },
+  successIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#ecfdf5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  successModalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginBottom: 8,
+  },
+  successModalDesc: {
+    fontSize: 13,
+    color: '#64748b',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 20,
+  },
+  successConfirmBtn: {
+    backgroundColor: '#10b981',
+    borderRadius: 12,
+    height: 44,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  successConfirmBtnText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

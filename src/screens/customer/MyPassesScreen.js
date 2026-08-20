@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  RefreshControl
+  RefreshControl,
+  Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -27,6 +28,28 @@ export default function MyPassesScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Modal States
+  const [payosModalVisible, setPayosModalVisible] = useState(false);
+  const [payosCheckoutUrl, setPayosCheckoutUrl] = useState('');
+  const [payosType, setPayosType] = useState('');
+  const [cancelSuccessModalVisible, setCancelSuccessModalVisible] = useState(false);
+
+  const triggerPayosRedirect = (url, type) => {
+    setPayosCheckoutUrl(url);
+    setPayosType(type);
+    setPayosModalVisible(true);
+    
+    // Auto-redirect after 1.5 seconds
+    setTimeout(() => {
+      setPayosModalVisible((visible) => {
+        if (visible) {
+          navigation.navigate('PaymentWebView', { url, type });
+        }
+        return false;
+      });
+    }, 1500);
+  };
 
   const loadPasses = async (isRef = false) => {
     if (isRef) setRefreshing(true);
@@ -76,7 +99,7 @@ export default function MyPassesScreen({ navigation }) {
       }
 
       if (checkoutUrl) {
-        navigation.navigate('PaymentWebView', { url: checkoutUrl, type: 'pass' });
+        triggerPayosRedirect(checkoutUrl, 'pass');
       } else {
         Alert.alert('Lỗi', 'Không lấy được đường dẫn thanh toán.');
       }
@@ -101,7 +124,7 @@ export default function MyPassesScreen({ navigation }) {
             setActionLoading(true);
             try {
               const { data } = await api.post(`/monthly-passes/${id}/cancel`);
-              Alert.alert('Thành công', data.message || 'Đã gửi yêu cầu hủy vé tháng thành công.');
+              setCancelSuccessModalVisible(true);
               loadPasses();
             } catch (err) {
               console.error(err);
@@ -245,6 +268,63 @@ export default function MyPassesScreen({ navigation }) {
           })}
         </ScrollView>
       )}
+      {/* MODAL THÔNG BÁO CHUYỂN SANG PAYOS */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={payosModalVisible}
+        onRequestClose={() => setPayosModalVisible(false)}
+      >
+        <View style={styles.payosModalOverlay}>
+          <View style={styles.payosModalContent}>
+            <View style={styles.payosIconContainer}>
+              <Feather name="credit-card" size={28} color="#4f46e5" />
+            </View>
+            <Text style={styles.payosModalTitle}>Đang chuyển hướng...</Text>
+            <Text style={styles.payosModalDesc}>
+              Hệ thống đang kết nối bảo mật đến cổng thanh toán PayOS. Vui lòng giữ kết nối internet và không tắt ứng dụng.
+            </Text>
+            <ActivityIndicator size="small" color="#4f46e5" style={{ marginVertical: 14 }} />
+            <TouchableOpacity
+              style={styles.payosConfirmBtn}
+              onPress={() => {
+                setPayosModalVisible(false);
+                if (payosCheckoutUrl) {
+                  navigation.navigate('PaymentWebView', { url: payosCheckoutUrl, type: payosType });
+                }
+              }}
+            >
+              <Text style={styles.payosConfirmBtnText}>Thanh toán ngay</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL THÔNG BÁO HỦY VÉ THÀNH CÔNG */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={cancelSuccessModalVisible}
+        onRequestClose={() => setCancelSuccessModalVisible(false)}
+      >
+        <View style={styles.successModalOverlay}>
+          <View style={styles.successModalContent}>
+            <View style={styles.successIconContainer}>
+              <Feather name="check-circle" size={32} color="#10b981" />
+            </View>
+            <Text style={styles.successModalTitle}>Hủy vé tháng thành công</Text>
+            <Text style={styles.successModalDesc}>
+              Yêu cầu hủy vé tháng của bạn đã được thực hiện thành công. Số tiền hoàn lại sẽ được hoàn về tài khoản ngân hàng liên kết theo chính sách hoàn tiền.
+            </Text>
+            <TouchableOpacity
+              style={styles.successConfirmBtn}
+              onPress={() => setCancelSuccessModalVisible(false)}
+            >
+              <Text style={styles.successConfirmBtnText}>Đồng ý</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -456,6 +536,106 @@ const styles = StyleSheet.create({
   cancelBtnText: {
     color: '#ef4444',
     fontSize: 13,
+    fontWeight: '700',
+  },
+  payosModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  payosModalContent: {
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 24,
+    width: '100%',
+    maxWidth: 320,
+    alignItems: 'center',
+  },
+  payosIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#eef2ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  payosModalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginBottom: 8,
+  },
+  payosModalDesc: {
+    fontSize: 13,
+    color: '#64748b',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  payosConfirmBtn: {
+    backgroundColor: '#4f46e5',
+    borderRadius: 12,
+    height: 44,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  payosConfirmBtnText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  successModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  successModalContent: {
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 24,
+    width: '100%',
+    maxWidth: 320,
+    alignItems: 'center',
+  },
+  successIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#ecfdf5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  successModalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginBottom: 8,
+  },
+  successModalDesc: {
+    fontSize: 13,
+    color: '#64748b',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 20,
+  },
+  successConfirmBtn: {
+    backgroundColor: '#10b981',
+    borderRadius: 12,
+    height: 44,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  successConfirmBtnText: {
+    color: '#ffffff',
+    fontSize: 14,
     fontWeight: '700',
   },
 });

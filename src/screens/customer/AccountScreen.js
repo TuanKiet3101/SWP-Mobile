@@ -43,6 +43,19 @@ export default function AccountScreen({ navigation }) {
               
               <TouchableOpacity 
                 style={styles.menuItem} 
+                onPress={() => navigation.navigate('Profile')}
+              >
+                <View style={styles.menuIconText}>
+                  <View style={[styles.menuIconWrapper, { backgroundColor: '#e0e7ff' }]}>
+                    <Feather name="user" size={16} color="#4f46e5" />
+                  </View>
+                  <Text style={styles.menuItemText}>Hồ sơ & Ngân hàng hoàn tiền</Text>
+                </View>
+                <Feather name="chevron-right" size={16} color="#94a3b8" />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.menuItem} 
                 onPress={() => navigation.navigate('MyParking')}
               >
                 <View style={styles.menuIconText}>

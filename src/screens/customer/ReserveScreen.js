@@ -101,6 +101,28 @@ export default function ReserveScreen({ route, navigation }) {
   const [capacity, setCapacity] = useState([]);
   const [metaLoading, setMetaLoading] = useState(true);
 
+  // PayOS Redirect states
+  const [payosModalVisible, setPayosModalVisible] = useState(false);
+  const [payosCheckoutUrl, setPayosCheckoutUrl] = useState('');
+  const [payosType, setPayosType] = useState('');
+
+  const triggerPayosRedirect = (url, type) => {
+    setPayosCheckoutUrl(url);
+    setPayosType(type);
+    setPayosModalVisible(true);
+    
+    // Auto-redirect after 1.5 seconds
+    setTimeout(() => {
+      setPayosModalVisible((visible) => {
+        if (visible) {
+          navigation.replace('Main', { screen: 'Account' });
+          navigation.navigate('PaymentWebView', { url, type });
+        }
+        return false;
+      });
+    }, 1500);
+  };
+
   // Booking Type State: 'daily' or 'monthly'
   const [bookingType, setBookingType] = useState('daily');
 
@@ -450,23 +472,11 @@ export default function ReserveScreen({ route, navigation }) {
 
         const { checkoutUrl } = data.data || {};
 
-        Alert.alert(
-          'Đặt chỗ thành công',
-          'Đơn đỗ xe đã được khởi tạo. Bạn sẽ được chuyển tới cổng thanh toán PayOS.',
-          [
-            {
-              text: 'Thanh toán ngay',
-              onPress: () => {
-                if (checkoutUrl) {
-                  navigation.replace('Main', { screen: 'Account' });
-                  navigation.navigate('PaymentWebView', { url: checkoutUrl, type: 'reservation' });
-                } else {
-                  navigation.replace('Main', { screen: 'Account' });
-                }
-              }
-            }
-          ]
-        );
+        if (checkoutUrl) {
+          triggerPayosRedirect(checkoutUrl, 'reservation');
+        } else {
+          navigation.replace('Main', { screen: 'Account' });
+        }
       } catch (err) {
         console.error(err);
         const msg = err.response?.data?.error?.message || 'Không thể tạo đơn đặt chỗ.';
@@ -496,23 +506,11 @@ export default function ReserveScreen({ route, navigation }) {
 
         const { checkoutUrl } = data.data || {};
 
-        Alert.alert(
-          'Đăng ký thành công',
-          'Đơn mua vé tháng đã được tạo. Bạn sẽ được chuyển tới cổng thanh toán PayOS.',
-          [
-            {
-              text: 'Thanh toán ngay',
-              onPress: () => {
-                if (checkoutUrl) {
-                  navigation.replace('Main', { screen: 'Account' });
-                  navigation.navigate('PaymentWebView', { url: checkoutUrl, type: 'pass' });
-                } else {
-                  navigation.replace('Main', { screen: 'Account' });
-                }
-              }
-            }
-          ]
-        );
+        if (checkoutUrl) {
+          triggerPayosRedirect(checkoutUrl, 'pass');
+        } else {
+          navigation.replace('Main', { screen: 'Account' });
+        }
       } catch (err) {
         console.error(err);
         const msg = err.response?.data?.error?.message || 'Không thể đăng ký mua vé tháng.';
@@ -818,6 +816,38 @@ export default function ReserveScreen({ route, navigation }) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      {/* MODAL THÔNG BÁO CHUYỂN SANG PAYOS */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={payosModalVisible}
+        onRequestClose={() => setPayosModalVisible(false)}
+      >
+        <View style={styles.payosModalOverlay}>
+          <View style={styles.payosModalContent}>
+            <View style={styles.payosIconContainer}>
+              <Feather name="credit-card" size={28} color="#4f46e5" />
+            </View>
+            <Text style={styles.payosModalTitle}>Đang chuyển hướng...</Text>
+            <Text style={styles.payosModalDesc}>
+              Hệ thống đang kết nối bảo mật đến cổng thanh toán PayOS. Vui lòng giữ kết nối internet và không tắt ứng dụng.
+            </Text>
+            <ActivityIndicator size="small" color="#4f46e5" style={{ marginVertical: 14 }} />
+            <TouchableOpacity
+              style={styles.payosConfirmBtn}
+              onPress={() => {
+                setPayosModalVisible(false);
+                if (payosCheckoutUrl) {
+                  navigation.replace('Main', { screen: 'Account' });
+                  navigation.navigate('PaymentWebView', { url: payosCheckoutUrl, type: payosType });
+                }
+              }}
+            >
+              <Text style={styles.payosConfirmBtnText}>Thanh toán ngay</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1229,5 +1259,55 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     lineHeight: 16,
     marginTop: 4,
+  },
+  payosModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  payosModalContent: {
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 24,
+    width: '100%',
+    maxWidth: 320,
+    alignItems: 'center',
+  },
+  payosIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#eef2ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  payosModalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginBottom: 8,
+  },
+  payosModalDesc: {
+    fontSize: 13,
+    color: '#64748b',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  payosConfirmBtn: {
+    backgroundColor: '#4f46e5',
+    borderRadius: 12,
+    height: 44,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  payosConfirmBtnText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

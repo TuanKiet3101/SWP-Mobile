@@ -31,7 +31,7 @@ const INCIDENT_TYPES_LIST = [
 
 export default function ReportIncidentScreen({ navigation }) {
   const [description, setDescription] = useState('');
-  const [photo, setPhoto] = useState(null);
+  const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(false);
   
   // Loại sự cố
@@ -102,6 +102,11 @@ export default function ReportIncidentScreen({ navigation }) {
 
   // Hàm chụp ảnh từ Camera
   const takePhoto = async () => {
+    if (photos.length >= 5) {
+      Alert.alert('Thông báo', 'Bạn chỉ được phép gửi tối đa 5 hình ảnh.');
+      return;
+    }
+
     const hasPermission = await requestCameraPermission();
     if (!hasPermission) return;
 
@@ -113,7 +118,7 @@ export default function ReportIncidentScreen({ navigation }) {
       });
 
       if (!result.canceled) {
-        setPhoto(result.assets[0].uri);
+        setPhotos(prev => [...prev, result.assets[0].uri]);
       }
     } catch (error) {
       console.error('Lỗi khi mở camera:', error);
@@ -123,18 +128,29 @@ export default function ReportIncidentScreen({ navigation }) {
 
   // Hàm chọn ảnh từ thư viện
   const pickImage = async () => {
+    if (photos.length >= 5) {
+      Alert.alert('Thông báo', 'Bạn chỉ được phép gửi tối đa 5 hình ảnh.');
+      return;
+    }
+
     const hasPermission = await requestLibraryPermission();
     if (!hasPermission) return;
 
     try {
+      const remainingLimit = 5 - photos.length;
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
-        allowsEditing: true,
+        allowsMultipleSelection: true,
+        selectionLimit: remainingLimit,
         quality: 0.8,
       });
 
       if (!result.canceled) {
-        setPhoto(result.assets[0].uri);
+        const newUris = result.assets.map(asset => asset.uri);
+        setPhotos(prev => {
+          const combined = [...prev, ...newUris];
+          return combined.slice(0, 5);
+        });
       }
     } catch (error) {
       console.error('Lỗi khi mở thư viện ảnh:', error);
@@ -154,8 +170,8 @@ export default function ReportIncidentScreen({ navigation }) {
       return;
     }
 
-    if (!photo) {
-      Alert.alert('Thông báo', 'Vui lòng chụp hoặc tải lên một hình ảnh liên quan đến sự cố.');
+    if (photos.length === 0) {
+      Alert.alert('Thông báo', 'Vui lòng chụp hoặc tải lên ít nhất một hình ảnh liên quan đến sự cố.');
       return;
     }
 
@@ -171,20 +187,23 @@ export default function ReportIncidentScreen({ navigation }) {
       }
 
       // Chuẩn bị file ảnh để gửi
-      const uriParts = photo.split('/');
-      const filename = uriParts[uriParts.length - 1];
-      const fileType = filename.split('.').pop();
+      photos.forEach((photoUri) => {
+        const uriParts = photoUri.split('/');
+        const filename = uriParts[uriParts.length - 1];
+        const fileType = filename.split('.').pop();
 
-      formData.append('photo', {
-        uri: photo,
-        name: filename,
-        type: `image/${fileType === 'jpg' ? 'jpeg' : fileType}`,
+        formData.append('photos', {
+          uri: photoUri,
+          name: filename,
+          type: `image/${fileType === 'jpg' ? 'jpeg' : fileType}`,
+        });
       });
 
       await api.post('/incidents/customer', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        timeout: 120000, // Tăng timeout lên 120 giây khi gửi nhiều ảnh
       });
 
       Alert.alert(
@@ -298,17 +317,28 @@ export default function ReportIncidentScreen({ navigation }) {
           />
 
           {/* Upload ảnh */}
-          <Text style={styles.label}>Hình ảnh minh chứng <Text style={{ color: '#ef4444' }}>*</Text></Text>
+          <View style={styles.photoHeader}>
+            <Text style={styles.label}>Hình ảnh minh chứng <Text style={{ color: '#ef4444' }}>*</Text></Text>
+            <Text style={styles.photoCount}>{photos.length}/5 ảnh</Text>
+          </View>
           
-          {photo ? (
-            <View style={styles.photoContainer}>
-              <Image source={{ uri: photo }} style={styles.previewImage} />
-              <TouchableOpacity style={styles.removePhotoButton} onPress={() => setPhoto(null)}>
-                <Feather name="trash-2" size={16} color="#ffffff" />
-                <Text style={styles.removePhotoText}>Xóa ảnh</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
+          {photos.length > 0 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoList}>
+              {photos.map((uri, index) => (
+                <View key={uri + index} style={styles.photoItem}>
+                  <Image source={{ uri }} style={styles.photoThumbnail} />
+                  <TouchableOpacity 
+                    style={styles.deleteBadge} 
+                    onPress={() => setPhotos(prev => prev.filter((_, i) => i !== index))}
+                  >
+                    <Feather name="x" size={14} color="#ffffff" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+
+          {photos.length < 5 && (
             <View style={styles.imagePickerOptions}>
               <TouchableOpacity style={styles.pickerButton} onPress={takePhoto}>
                 <View style={[styles.iconCircle, { backgroundColor: '#eef2ff' }]}>
@@ -583,36 +613,51 @@ const styles = StyleSheet.create({
     color: '#64748b',
     marginTop: 4,
   },
-  photoContainer: {
-    position: 'relative',
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1.5,
-    borderColor: '#e2e8f0',
-    backgroundColor: '#f1f5f9',
-    alignItems: 'center',
-  },
-  previewImage: {
-    width: '100%',
-    height: 240,
-    resizeMode: 'cover',
-  },
-  removePhotoButton: {
-    position: 'absolute',
-    bottom: 12,
-    right: 12,
-    backgroundColor: 'rgba(239, 68, 68, 0.9)',
+  photoHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    gap: 6,
+    marginBottom: -4,
   },
-  removePhotoText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '700',
+  photoCount: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748b',
+  },
+  photoList: {
+    gap: 12,
+    paddingVertical: 4,
+  },
+  photoItem: {
+    width: 90,
+    height: 90,
+    borderRadius: 12,
+    position: 'relative',
+    marginRight: 8,
+  },
+  photoThumbnail: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
+    resizeMode: 'cover',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  deleteBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#ef4444',
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#ef4444',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 2,
   },
   submitButton: {
     backgroundColor: '#4f46e5',
